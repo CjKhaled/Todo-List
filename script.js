@@ -1,7 +1,31 @@
-// Different pages
+// Helper functions
 function clearPage() {
     const content = document.querySelector(".content");
     content.innerHTML = '';
+}
+
+function formatDate(date) {
+    const dt = new Date(date + 'T00:00:00');
+    const options = { month: 'short', day: 'numeric' };
+    let formattedDate = dt.toLocaleDateString('en-US', options);
+
+    const day = dt.getDate();
+    let suffix = 'th';
+    const exceptions = { 1: 'st', 2: 'nd', 3: 'rd', 21: 'st', 22: 'nd', 23: 'rd', 31: 'st' };
+    if (exceptions[day]) {
+        suffix = exceptions[day];
+    } else if (day > 3 && day < 21) {
+        suffix = 'th';
+    }
+
+    return `${formattedDate}${suffix}`
+}
+
+function formatTitle(title) {
+    let newTitle = title.trim();
+    newTitle = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
+    return newTitle;
+
 }
 
 class homeContent {
@@ -27,12 +51,13 @@ class homeContent {
     addEventListeners() {
         this.backdrop.addEventListener('click', () => {
             this.popup.style.display = "none";
-            this.backdrop.style.display = "none"
+            this.backdrop.style.display = "none";
         })
 
         this.addButton.addEventListener('click', () => {
             if (this.active == true) {
-                this.popup.innerHTML = "<h2>Add To-Do</h2> <form class='input-fields'> <label for='title'>Title:</label> <input type='text' placeholder='4-20 characters max' id='title' name='title' minlength='4' maxlength='20' required> <div class='radio-buttons'> <div class='button-group'><label for='high'>High</label> <input type='radio' id='high' name='priority' value='high' required></div> <div class='button-group'><label for='medium'>Medium</label> <input type='radio' id='medium' name='priority' value='medium' required></div> <div class='button-group'><label for='low'>Low</label> <input type='radio' id='low' name='priority' value='low' required> </div></div><label for='date'>Date Due:</label> <input type='text' placeholder='4-20 characters max' id='date' name='date' minlength='4' maxlength='20' required> <label for='description'>Description: </label><textarea name='description' id='description' cols='30' rows='10' minlength='10' maxlength='150' placeholder='10-150 characters max' style='resize: none;' required></textarea> <button type='submit' id='add-to-do' class='add-to-do'>Add Item</button> <p>(click anywhere outside this box to exit the window)</p> </form>"
+                const today = new Date().toISOString().substring(0, 10);
+                this.popup.innerHTML = `<h2>Add To-Do</h2> <form class='input-fields'> <label for='title'>Title:</label> <input type='text' placeholder='4-20 characters max' id='title' name='title' minlength='4' maxlength='20' required> <div class='radio-buttons'> <div class='button-group'><label for='high'>High</label> <input type='radio' id='high' name='priority' value='high' required></div> <div class='button-group'><label for='medium'>Medium</label> <input type='radio' id='medium' name='priority' value='medium' required></div> <div class='button-group'><label for='low'>Low</label> <input type='radio' id='low' name='priority' value='low' required> </div></div><label for='date'>Date Due:</label> <input type='date' id='date' name='date' value=${today} min=${today} max='2024-12-31' required> <label for='description'>Description: </label><textarea name='description' id='description' cols='30' rows='10' minlength='10' maxlength='150' placeholder='10-150 characters max' style='resize: none;' required></textarea> <button type='submit' id='add-to-do' class='add-to-do'>Add Item</button> <p>(click anywhere outside this box to exit the window)</p> </form>`
                 this.popup.style.display = "flex";
                 this.backdrop.style.display = "flex";
                 this.addTodoItem();
@@ -53,6 +78,8 @@ class homeContent {
 
         else {
             this.home.className = "not-active"
+            this.popup.style.display = "none";
+            this.backdrop.style.display = "none";
         }
 
         this.changeStatus();
@@ -79,32 +106,49 @@ class homeContent {
         const submitForm = document.querySelector("form.input-fields")
         submitForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            this.todoList.push(new todoItem(e.target.title.value, e.target.description.value, e.target.date.value, e.target.priority.value, this.deleteItem.bind(this), this.editTodoItem.bind(this)))
-            this.writeContent();
-            this.popup.style.display = "none"
-            this.backdrop.style.display = "none"
-            submitForm.reset()
+            if (this.todoList.length == 8) {
+                alert("Too many items. You need to delete one to add another.")
+            } else {
+                const newTitle = formatTitle(e.target.title.value);
+                const checkIfExists = this.todoList.some(object => object.title.toLowerCase() === newTitle.toLowerCase());
+                if (checkIfExists == false) {
+                    this.todoList.push(new todoItem(newTitle, e.target.description.value, formatDate(e.target.date.value), e.target.priority.value, this.deleteItem.bind(this), this.editTodoItem.bind(this)))
+                    this.writeContent();
+                    this.popup.style.display = "none"
+                    this.backdrop.style.display = "none"
+                    submitForm.reset()
+                } else {
+                    alert("A to-do item with this name exists- use a different name.")
+                }
+            }
         })
     }
 
     editTodoItem(title) {        
         this.todoList.forEach((object) => {
             if (object.title == title) {
-                this.popup.innerHTML = `<h2>Edit To-Do</h2> <form class='input-fields-edit'> <label for='title'>Title:</label> <input type='text' value=${object.title} placeholder='4-20 characters max' id='title' name='title' minlength='4' maxlength='20' required> <div class='radio-buttons'> <div class='button-group'><label for='high'>High</label> <input type='radio' id='high' name='priority' value='high' required></div> <div class='button-group'><label for='medium'>Medium</label> <input type='radio' id='medium' name='priority' value='medium' required></div> <div class='button-group'><label for='low'>Low</label> <input type='radio' id='low' name='priority' value='low' required> </div></div><label for='date'>Date Due:</label> <input type='text' placeholder='4-20 characters max' id='date' name='date' minlength='4' maxlength='20' required> <label for='description'>Description: </label><textarea name='description' id='description' cols='30' rows='10' minlength='10' maxlength='150' placeholder='10-150 characters max' style='resize: none;' required>${object.description}</textarea> <button type='submit' id='add-to-do' class='add-to-do'>Edit Item</button> <p>(click anywhere outside this box to exit the window)</p> </form>`
+                const today = new Date().toISOString().substring(0, 10);
+                this.popup.innerHTML = `<h2>Edit To-Do</h2> <form class='input-fields-edit'> <label for='title'>Title:</label> <input type='text' value=${object.title} placeholder='4-20 characters max' id='title' name='title' minlength='4' maxlength='20' required> <div class='radio-buttons'> <div class='button-group'><label for='high'>High</label> <input type='radio' id='high' name='priority' value='high' required></div> <div class='button-group'><label for='medium'>Medium</label> <input type='radio' id='medium' name='priority' value='medium' required></div> <div class='button-group'><label for='low'>Low</label> <input type='radio' id='low' name='priority' value='low' required> </div></div><label for='date'>Date Due:</label> <input type='date' id='date' name='date' min=${today} max='2024-12-31' required> <label for='description'>Description: </label><textarea name='description' id='description' cols='30' rows='10' minlength='10' maxlength='150' placeholder='10-150 characters max' style='resize: none;' required>${object.description}</textarea> <button type='submit' id='add-to-do' class='add-to-do'>Edit Item</button> <p>(click anywhere outside this box to exit the window)</p> </form>`
                 this.popup.style.display = "flex";
                 this.backdrop.style.display = "flex";
                 const submitEdit = document.querySelector("form.input-fields-edit")
                 submitEdit.addEventListener('submit', (e) => {
                     e.preventDefault();
-                    object.title = e.target.title.value;
-                    object.description = e.target.description.value;
-                    object.dueDate = e.target.date.value;
-                    object.priority = e.target.priority.value;
-                    object.updatePriority();
-                    this.writeContent();
-                    this.popup.style.display = "none"
-                    this.backdrop.style.display = "none"
-                    submitEdit.reset();
+                    const newTitle = formatTitle(e.target.title.value);
+                    const checkIfExists = this.todoList.some(object => object.title.toLowerCase() === newTitle.toLowerCase());
+                    if (checkIfExists == false) {
+                        object.title = newTitle;
+                        object.description = e.target.description.value;
+                        object.dueDate = e.target.date.value;
+                        object.priority = e.target.priority.value;
+                        object.updatePriority();
+                        this.writeContent();
+                        this.popup.style.display = "none"
+                        this.backdrop.style.display = "none"
+                        submitEdit.reset();
+                    } else {
+                        alert("A to-do item with this name exists- use a different name.")
+                    }
                 })
             }
         })
@@ -195,13 +239,25 @@ class projectsContent {
         const submitProject = document.querySelector("form.input-fields-projects");
         if (this.submitListenerAdded !== true && this.active == true) {
             submitProject.addEventListener('submit', (e) => {
-                e.preventDefault()
-                this.projectObjects.push(new projectContent(e.target.title.value));
-                this.addToProjects(e.target.title.value);
-                submitProject.reset();
-                this.popup.style.display = "none";
-                this.backdrop.style.display = "none"
-                this.writeContent();
+                e.preventDefault();
+                if (this.projectObjects.length == 10) {
+                    alert("Too many projects. You need to delete one to add another.")
+                } else {
+                    const newTitle = formatTitle(e.target.title.value)
+                    const checkIfExists = this.projectObjects.some(object => object.name.toLowerCase() === newTitle.toLowerCase());
+                    if (checkIfExists == false) {
+                        this.projectObjects.push(new projectContent(newTitle));
+                        this.addToProjects(newTitle);
+                        submitProject.reset();
+                        this.popup.style.display = "none";
+                        this.backdrop.style.display = "none"
+                        this.writeContent();
+                    } else {
+                        alert("Project with this name already exists. Please choose a different name.")
+                    }
+                }
+                
+                
             })
             this.submitListenerAdded = true;
         } 
@@ -230,6 +286,8 @@ class projectsContent {
 
         else {
             this.projects.className = "not-active"
+            this.popup.style.display = "none";
+            this.backdrop.style.display = "none";
         }
 
         this.changeStatus();
@@ -264,18 +322,107 @@ class projectContent {
         this.name = name
         this.project = document.querySelector(`h3[data-project="${name}"]`)
         this.active = false;
+        this.todoList = [];
+        this.createElements();
+        this.addEventListeners();
     }
 
-    writeContent() {
-        if (this.active == true) {
-            clearPage();
-            const content = document.querySelector(".content");
-            const projectContent = document.createElement("div");
-            const words = document.createElement("p");
-            words.innerHTML = `This is a project named ${this.name}`;
-            content.appendChild(projectContent);
-            projectContent.appendChild(words);
-        }
+    createElements() {
+        this.content = document.querySelector(".content");
+        this.popup = document.createElement('div');
+        this.popup.className = 'popup';
+        this.backdrop = document.createElement('div');
+        this.backdrop.className = "backdrop";
+        this.addButton = document.querySelector(".add-button > *");
+        this.todoItems = document.createElement("div");
+        this.todoItems.className = "todo-items";
+        this.projectHeader = document.createElement("h2");
+        this.projectHeader.style.cssText = "text-align: center";
+    }
+
+    addEventListeners() {
+        this.backdrop.addEventListener('click', () => {
+            this.popup.style.display = "none";
+            this.backdrop.style.display = "none";
+        })
+
+        this.addButton.addEventListener('click', () => {
+            if (this.active == true) {
+                const today = new Date().toISOString().substring(0, 10);
+                this.popup.innerHTML = `<h2>Add To Project</h2> <form class='input-fields-project' id=${this.name}-add> <label for='title'>Title:</label> <input type='text' placeholder='4-20 characters max' id='title' name='title' minlength='4' maxlength='20' required> <div class='radio-buttons'> <div class='button-group'><label for='high'>High</label> <input type='radio' id='high' name='priority' value='high' required></div> <div class='button-group'><label for='medium'>Medium</label> <input type='radio' id='medium' name='priority' value='medium' required></div> <div class='button-group'><label for='low'>Low</label> <input type='radio' id='low' name='priority' value='low' required> </div></div><label for='date'>Date Due:</label> <input type='date' id='date' name='date' min=${today} max='2024-12-31' required> <label for='description'>Description: </label><textarea name='description' id='description' cols='30' rows='10' minlength='10' maxlength='150' placeholder='10-150 characters max' style='resize: none;' required></textarea> <button type='submit' id='add-to-do' class='add-to-do'>Add Item</button> <p>(click anywhere outside this box to exit the window)</p> </form>`
+                this.popup.style.display = "flex";
+                this.backdrop.style.display = "flex";
+                this.addTodoItem();
+            }
+        })
+    }
+
+    addElements() {
+        this.content.appendChild(this.projectHeader)
+        this.content.appendChild(this.todoItems);
+        this.content.appendChild(this.popup);
+        this.content.appendChild(this.backdrop);
+    }
+
+    addTodoItem() {
+        const submitForm = document.getElementById(`${this.name}-add`)
+        submitForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (this.todoList.length == 8) {
+                alert("Too many items. You need to delete one to add another.")
+            } else {
+                const newTitle = formatTitle(e.target.title.value);
+                const checkIfExists = this.todoList.some(object => object.title.toLowerCase() === newTitle.toLowerCase());
+                if (checkIfExists == false) {
+                    this.todoList.push(new todoItem(newTitle, e.target.description.value, e.target.date.value, e.target.priority.value, this.deleteItem.bind(this), this.editTodoItem.bind(this)))
+                    this.writeContent();
+                    this.popup.style.display = "none"
+                    this.backdrop.style.display = "none"
+                    submitForm.reset()
+                } else {
+                    alert("A to-do item with this name exists- use a different name.")
+                }
+            }
+            
+        })
+    }
+
+    editTodoItem(title) {        
+        this.todoList.forEach((object) => {
+            if (object.title == title) {
+                const today = new Date().toISOString().substring(0, 10);
+                this.popup.innerHTML = `<h2>Edit To-Do</h2> <form class='input-fields-edit' id=${this.name}-edit> <label for='title'>Title:</label> <input type='text' value=${object.title} placeholder='4-20 characters max' id='title' name='title' minlength='4' maxlength='20' required> <div class='radio-buttons'> <div class='button-group'><label for='high'>High</label> <input type='radio' id='high' name='priority' value='high' required></div> <div class='button-group'><label for='medium'>Medium</label> <input type='radio' id='medium' name='priority' value='medium' required></div> <div class='button-group'><label for='low'>Low</label> <input type='radio' id='low' name='priority' value='low' required> </div></div><label for='date'>Date Due:</label> <input type='date' id='date' name='date' min=${today} max='2024-12-31' required> <label for='description'>Description: </label><textarea name='description' id='description' cols='30' rows='10' minlength='10' maxlength='150' placeholder='10-150 characters max' style='resize: none;' required>${object.description}</textarea> <button type='submit' id='add-to-do' class='add-to-do'>Edit Item</button> <p>(click anywhere outside this box to exit the window)</p> </form>`
+                this.popup.style.display = "flex";
+                this.backdrop.style.display = "flex";
+                const submitEdit = document.getElementById(`${this.name}-edit`)
+                submitEdit.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const newTitle = formatTitle(e.target.title.value);
+                    const checkIfExists = this.todoList.some(object => object.title.toLowerCase() === newTitle.toLowerCase());
+                    if (checkIfExists == false) {
+                        object.title = newTitle;
+                        object.description = e.target.description.value;
+                        object.dueDate = e.target.date.value;
+                        object.priority = e.target.priority.value;
+                        object.updatePriority();
+                        this.writeContent();
+                        this.popup.style.display = "none"
+                        this.backdrop.style.display = "none"
+                        submitEdit.reset();
+                    } else {
+                        alert("A to-do item with this name exists- use a different name.")
+                    }
+                    
+                })
+            }
+        })
+    }
+
+    deleteItem(title) {
+        this.todoList = this.todoList.filter(item => item.title !== title);
+        const itemToDelete = document.querySelector(`[data-todo="${title}"]`)
+        itemToDelete.remove();
+        this.writeContent();
     }
 
     checkClickedOn(check) {
@@ -297,6 +444,25 @@ class projectContent {
         
         else {
             this.active = false;
+        }
+    }
+
+    defaultText() {
+        if (this.todoList.length == 0) {
+            this.projectHeader.innerHTML = "This project is currently empty. Click the lower left hand plus symbol to add a new task!";
+        } else {
+            this.projectHeader.innerHTML = "";
+        }
+    }
+
+    writeContent() {
+        if (this.active == true) {
+            clearPage()
+            this.addElements();
+            this.defaultText()
+            this.todoList.forEach((item) => {
+                item.showTodo(this.todoItems, this.popup, this.backdrop);
+            })
         }
     }
 }
@@ -512,6 +678,7 @@ class todoItem {
 
 const content = new contentController();
 content.handleLinkClick()
+
 
 
 
