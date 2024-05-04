@@ -1,6 +1,7 @@
 body {
     padding: 0;
     margin: 0;
+    font-family: 'Mulish';
 }
 
 main {
@@ -38,6 +39,22 @@ main .app-container {
 
 .side-bar > .links {
     cursor: pointer;
+    transition: 500ms;
+}
+
+.project-links {
+    cursor: pointer;
+    transition: 500ms;
+}
+
+.project-links > .active {
+    color: white;
+    background-color: grey;
+    border-right: solid 5px white;
+    cursor: pointer;
+    text-indent: 20px;
+    display: flex;
+    transition: 500ms;
 }
 
 .side-bar > .links > .active {
@@ -47,10 +64,29 @@ main .app-container {
     cursor: pointer;
     text-indent: 20px;
     display: flex;
+    transition: 500ms;
+}
+
+.side-bar > .add-button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    transition: 500ms;
+}
+
+.side-bar > .add-button:hover {
+    border-right: solid 10px #1C274C;
+    background-color: grey;
+    transition: 500ms;
+}
+
+.side-bar > .add-button {
+    cursor: pointer;
 }
 
 .side-bar > .add-button > svg {
-    cursor: pointer;
+    color: white;
 }
 
 .content {

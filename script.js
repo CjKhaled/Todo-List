@@ -33,8 +33,29 @@ class homeContent {
         this.home = document.getElementById('home');
         this.active = true;
         this.todoList = [new todoItem("BoomBaby", "Tets", "Apr 31st", "high", this.deleteItem.bind(this), this.editTodoItem.bind(this)), new todoItem("BoomMom", "wassssussppp bitches", "Apr 29th", "medium", this.deleteItem.bind(this), this.editTodoItem.bind(this)), new todoItem("BoomPops", "Tsabjdsakdas", "Apr 26th", "low", this.deleteItem.bind(this), this.editTodoItem.bind(this))]
+        this.loadTodoItems();
         this.createElements();
         this.addEventListeners();  
+    }
+
+    sortTodoItems() {
+        const priorityValues = {'high': 3, 'medium': 2, 'low': 1};
+        this.todoList.sort((a, b) => {
+            return priorityValues[b.priority] - priorityValues[a.priority];
+        })
+    }
+
+    loadTodoItems() {
+        const savedItems = localStorage.getItem('todoItems');
+        if (savedItems !== null) {
+            this.todoList = JSON.parse(savedItems).map(item => new todoItem(item.title, item.desc, item.due, item.priority, this.deleteItem.bind(this), this.editTodoItem.bind(this)))
+        } else {
+            this.todoList = [];
+        }
+    }
+
+    saveTodoItems() {
+        localStorage.setItem('todoItems', JSON.stringify(this.todoList.map(item => ({title: item.title, desc: item.description, due: item.dueDate, priority: item.priority}))))
     }
 
     createElements() {
@@ -43,9 +64,11 @@ class homeContent {
         this.popup.className = 'popup';
         this.backdrop = document.createElement('div');
         this.backdrop.className = "backdrop";
-        this.addButton = document.querySelector(".add-button > *");
+        this.addButton = document.querySelector(".add-button");
         this.todoItems = document.createElement("div");
         this.todoItems.className = "todo-items";
+        this.homeHeader = document.createElement("h2");
+        this.homeHeader.style.cssText = "text-align: center";
     }
 
     addEventListeners() {
@@ -66,40 +89,10 @@ class homeContent {
     }
 
     addElements() {
+        this.content.appendChild(this.homeHeader)
         this.content.appendChild(this.todoItems);
         this.content.appendChild(this.popup);
         this.content.appendChild(this.backdrop);
-    }
-
-    checkClickedOn(check) {
-        if (check == true) {
-            this.home.className = "active"
-        }
-
-        else {
-            this.home.className = "not-active"
-            this.popup.style.display = "none";
-            this.backdrop.style.display = "none";
-        }
-
-        this.changeStatus();
-    }
-
-    changeStatus() {
-        if (this.home.className == 'active') {
-            this.active = true;
-        } 
-        
-        else {
-            this.active = false;
-        }
-    }
-
-    deleteItem(title) {
-        this.todoList = this.todoList.filter(item => item.title !== title);
-        const itemToDelete = document.querySelector(`[data-todo="${title}"]`)
-        itemToDelete.remove();
-        this.writeContent();
     }
 
     addTodoItem() {
@@ -116,7 +109,8 @@ class homeContent {
                     this.writeContent();
                     this.popup.style.display = "none"
                     this.backdrop.style.display = "none"
-                    submitForm.reset()
+                    this.saveTodoItems();
+                    submitForm.reset();
                 } else {
                     alert("A to-do item with this name exists- use a different name.")
                 }
@@ -145,6 +139,7 @@ class homeContent {
                         this.writeContent();
                         this.popup.style.display = "none"
                         this.backdrop.style.display = "none"
+                        this.saveTodoItems();
                         submitEdit.reset();
                     } else {
                         alert("A to-do item with this name exists- use a different name.")
@@ -154,10 +149,58 @@ class homeContent {
         })
     }
 
+    deleteItem(title) {
+        this.todoList = this.todoList.filter(item => item.title !== title);
+        const itemToDelete = document.querySelector(`[data-todo="${title}"]`)
+        itemToDelete.remove();
+        this.saveTodoItems();
+        this.writeContent();
+    }
+
+    defaultText() {
+        if (this.todoList.length == 0) {
+            this.homeHeader.innerHTML = "This is currently empty. Click the lower left hand plus symbol to add a new task!";
+        } else {
+            this.homeHeader.innerHTML = "";
+        }
+    }
+
+    checkClickedOn(check) {
+        if (check == true) {
+            this.home.className = "active"
+        }
+
+        else {
+            this.home.className = "not-active"
+            this.popup.style.display = "none";
+            this.backdrop.style.display = "none";
+        }
+
+        this.changeStatus();
+    }
+
+    changeStatus() {
+        if (this.home.className == 'active') {
+            this.active = true;
+        } 
+        
+        else {
+            this.active = false;
+        }
+    }
+
+    sideBarContent() {
+        this.addButtonText = document.querySelector(".add-button-text");
+        this.addButtonText.innerHTML = "Add Todo: Home"
+    }
+
     writeContent() {
         if (this.active == true) {
             clearPage()
             this.addElements();
+            this.sortTodoItems();
+            this.defaultText();
+            this.sideBarContent();
             this.todoList.forEach((item) => {
                 item.showTodo(this.todoItems, this.popup, this.backdrop);
             })
@@ -166,16 +209,29 @@ class homeContent {
 }
 
 class projectsContent {
-    constructor(defaultOne, defaultTwo, handleProjectClick, deleteProject, addToProjects) {
+    constructor(handleProjectClick, deleteProject, addToProjects) {
         this.projects = document.getElementById('projects')
         this.active = false;
-        this.projectObjects = [defaultOne, defaultTwo];
+        this.loadProjects();
         this.handleProjectClick = handleProjectClick;
         this.deleteProject = deleteProject;
         this.createElements();
         this.addEventListeners();
         this.addToProjects = addToProjects;
         this.submitListenerAdded = false;
+    }
+
+    loadProjects() {
+        const savedProjects = localStorage.getItem('projectObjects');
+        if (savedProjects !== null) {
+            this.projectObjects = JSON.parse(savedProjects).map(name => new projectContent(name));
+        } else {
+            this.projectObjects = [];
+        }
+    }
+
+    saveProjects() {
+        localStorage.setItem('projectObjects', JSON.stringify(this.projectObjects.map(proj => proj.name)))
     }
 
     createElements() {
@@ -187,10 +243,10 @@ class projectsContent {
         this.projectItems.className = "project-items";
         this.popup = document.createElement('div');
         this.popup.className = 'popup';
-        this.popup.innerHTML = "<h2>New Project</h2> <form class='input-fields-projects'> <label for='title'>Title:</label> <input type='text' placeholder='4-10 characters max' id='title' name='title' minlength='4' maxlength='10' required> <button type='submit' id='add-to-do' class='add-to-do'>Add Project</button> </form>"
+        this.popup.innerHTML = "<h2>New Project</h2> <form class='input-fields-projects'> <label for='title'>Title:</label> <input type='text' placeholder='2-10 characters max' id='title' name='title' minlength='2' maxlength='10' required> <button type='submit' id='add-to-do' class='add-to-do'>Add Project</button> </form>"
         this.backdrop = document.createElement('div');
         this.backdrop.className = 'backdrop';
-        this.addButton = document.querySelector(".add-button > *");
+        this.addButton = document.querySelector(".add-button");
     }
 
     createProjectElements(name) {
@@ -218,6 +274,7 @@ class projectsContent {
 
         this.deleteProjectButton.addEventListener('click', () => {
             this.projectObjects = this.projectObjects.filter(item => item.name !== name);
+            this.saveProjects();
             this.deleteProject(name);
         })
     }
@@ -247,6 +304,7 @@ class projectsContent {
                     const checkIfExists = this.projectObjects.some(object => object.name.toLowerCase() === newTitle.toLowerCase());
                     if (checkIfExists == false) {
                         this.projectObjects.push(new projectContent(newTitle));
+                        this.saveProjects();
                         this.addToProjects(newTitle);
                         submitProject.reset();
                         this.popup.style.display = "none";
@@ -303,10 +361,16 @@ class projectsContent {
         }
     }
 
+    sideBarContent() {
+        this.addButtonText = document.querySelector(".add-button-text");
+        this.addButtonText.innerHTML = "Add Project: Projects"
+    }
+
     writeContent() {
         if (this.active == true) {
             clearPage();
             this.addElements();
+            this.sideBarContent()
             this.projectItems.innerHTML = "";
             this.projectObjects.forEach((object) => {
                 this.createProjectElements(object.name);
@@ -320,11 +384,35 @@ class projectsContent {
 class projectContent {
     constructor(name) {
         this.name = name
-        this.project = document.querySelector(`h3[data-project="${name}"]`)
         this.active = false;
         this.todoList = [];
+        this.loadTodoItems();
         this.createElements();
         this.addEventListeners();
+    }
+
+    sortTodoItems() {
+        const priorityValues = {'high': 3, 'medium': 2, 'low': 1};
+        this.todoList.sort((a, b) => {
+            return priorityValues[b.priority] - priorityValues[a.priority];
+        })
+    }
+
+    loadTodoItems() {
+        const savedProjectItems = localStorage.getItem(`todoItems-${this.name}`);
+        if (savedProjectItems !== null) {
+            this.todoList = JSON.parse(savedProjectItems).map(item => new todoItem(item.title, item.desc, item.due, item.priority, this.deleteItem.bind(this), this.editTodoItem.bind(this)))
+        } else {
+            this.todoList = [];
+        }
+    }
+
+    saveTodoItems() {
+        localStorage.setItem(`todoItems-${this.name}`, JSON.stringify(this.todoList.map(item => ({title: item.title, desc: item.description, due: item.dueDate, priority: item.priority}))))
+    }
+
+    initializeProjectElement() {
+        this.project = document.querySelector(`h3[data-project="${this.name}"]`)
     }
 
     createElements() {
@@ -333,7 +421,7 @@ class projectContent {
         this.popup.className = 'popup';
         this.backdrop = document.createElement('div');
         this.backdrop.className = "backdrop";
-        this.addButton = document.querySelector(".add-button > *");
+        this.addButton = document.querySelector(".add-button");
         this.todoItems = document.createElement("div");
         this.todoItems.className = "todo-items";
         this.projectHeader = document.createElement("h2");
@@ -349,7 +437,7 @@ class projectContent {
         this.addButton.addEventListener('click', () => {
             if (this.active == true) {
                 const today = new Date().toISOString().substring(0, 10);
-                this.popup.innerHTML = `<h2>Add To Project</h2> <form class='input-fields-project' id=${this.name}-add> <label for='title'>Title:</label> <input type='text' placeholder='4-20 characters max' id='title' name='title' minlength='4' maxlength='20' required> <div class='radio-buttons'> <div class='button-group'><label for='high'>High</label> <input type='radio' id='high' name='priority' value='high' required></div> <div class='button-group'><label for='medium'>Medium</label> <input type='radio' id='medium' name='priority' value='medium' required></div> <div class='button-group'><label for='low'>Low</label> <input type='radio' id='low' name='priority' value='low' required> </div></div><label for='date'>Date Due:</label> <input type='date' id='date' name='date' min=${today} max='2024-12-31' required> <label for='description'>Description: </label><textarea name='description' id='description' cols='30' rows='10' minlength='10' maxlength='150' placeholder='10-150 characters max' style='resize: none;' required></textarea> <button type='submit' id='add-to-do' class='add-to-do'>Add Item</button> <p>(click anywhere outside this box to exit the window)</p> </form>`
+                this.popup.innerHTML = `<h2>Add To Project</h2> <form class='input-fields-project' id=${this.name}-add> <label for='title'>Title:</label> <input type='text' placeholder='4-20 characters max' id='title' name='title' minlength='4' maxlength='20' required> <div class='radio-buttons'> <div class='button-group'><label for='high'>High</label> <input type='radio' id='high' name='priority' value='high' required></div> <div class='button-group'><label for='medium'>Medium</label> <input type='radio' id='medium' name='priority' value='medium' required></div> <div class='button-group'><label for='low'>Low</label> <input type='radio' id='low' name='priority' value='low' required> </div></div><label for='date'>Date Due:</label> <input type='date' id='date' name='date' value=${today} min=${today} max='2024-12-31' required> <label for='description'>Description: </label><textarea name='description' id='description' cols='30' rows='10' minlength='10' maxlength='150' placeholder='10-150 characters max' style='resize: none;' required></textarea> <button type='submit' id='add-to-do' class='add-to-do'>Add Item</button> <p>(click anywhere outside this box to exit the window)</p> </form>`
                 this.popup.style.display = "flex";
                 this.backdrop.style.display = "flex";
                 this.addTodoItem();
@@ -374,10 +462,11 @@ class projectContent {
                 const newTitle = formatTitle(e.target.title.value);
                 const checkIfExists = this.todoList.some(object => object.title.toLowerCase() === newTitle.toLowerCase());
                 if (checkIfExists == false) {
-                    this.todoList.push(new todoItem(newTitle, e.target.description.value, e.target.date.value, e.target.priority.value, this.deleteItem.bind(this), this.editTodoItem.bind(this)))
+                    this.todoList.push(new todoItem(newTitle, e.target.description.value, formatDate(e.target.date.value), e.target.priority.value, this.deleteItem.bind(this), this.editTodoItem.bind(this)))
                     this.writeContent();
                     this.popup.style.display = "none"
                     this.backdrop.style.display = "none"
+                    this.saveTodoItems()
                     submitForm.reset()
                 } else {
                     alert("A to-do item with this name exists- use a different name.")
@@ -408,6 +497,7 @@ class projectContent {
                         this.writeContent();
                         this.popup.style.display = "none"
                         this.backdrop.style.display = "none"
+                        this.saveTodoItems();
                         submitEdit.reset();
                     } else {
                         alert("A to-do item with this name exists- use a different name.")
@@ -422,10 +512,12 @@ class projectContent {
         this.todoList = this.todoList.filter(item => item.title !== title);
         const itemToDelete = document.querySelector(`[data-todo="${title}"]`)
         itemToDelete.remove();
+        this.saveTodoItems();
         this.writeContent();
     }
 
     checkClickedOn(check) {
+        this.initializeProjectElement();
         if (check == true) {
             this.project.className = "active"
         }
@@ -455,11 +547,18 @@ class projectContent {
         }
     }
 
+    sideBarContent() {
+        this.addButtonText = document.querySelector(".add-button-text");
+        this.addButtonText.innerHTML = `Add Todo: ${this.name}`
+    }
+
     writeContent() {
         if (this.active == true) {
             clearPage()
             this.addElements();
-            this.defaultText()
+            this.defaultText();
+            this.sortTodoItems();
+            this.sideBarContent()
             this.todoList.forEach((item) => {
                 item.showTodo(this.todoItems, this.popup, this.backdrop);
             })
@@ -469,11 +568,23 @@ class projectContent {
 
 class contentController {
     constructor () {
+        this.projectObjects = [];
         this.homeContent = new homeContent();
-        this.projectsContent = new projectsContent(new projectContent("Work"), new projectContent("Fitness"), this.handleProjectClick.bind(this), this.deleteProject.bind(this), this.addToProjects.bind(this));
-        this.projectObjects = [new projectContent("Work"), new projectContent("Fitness")];
+        this.projectsContent = new projectsContent(this.handleProjectClick.bind(this), this.deleteProject.bind(this), this.addToProjects.bind(this));
+        this.loadProjects();
         // home content by default is active, so we will show on initialization
         this.homeContent.writeContent();
+    }
+
+    loadProjects() {
+        const savedProjects = localStorage.getItem('projectObjects');
+        if (savedProjects !== null) {
+            this.projectObjects = JSON.parse(savedProjects).map(name => new projectContent(name));
+        } else {
+            this.projectObjects = [];
+        }
+
+        this.updateSidebar();
     }
 
     handleLinkClick() {
@@ -532,16 +643,25 @@ class contentController {
         this.projectsContent.writeContent();
     }
 
+    updateSidebar() {
+        const sideBarProjectLinks = document.querySelector('.project-links');
+        sideBarProjectLinks.innerHTML = "";
+        
+        this.projectObjects.forEach(proj => {
+            const newLink = document.createElement("h3")
+            newLink.id = "project";
+            newLink.className = "not-active";
+            newLink.style.fontSize = "23px";
+            newLink.setAttribute('data-project', proj.name);
+            newLink.innerHTML = proj.name;
+            sideBarProjectLinks.appendChild(newLink);
+        })
+        this.projectsContent.writeContent();
+    }
+
     addToProjects(title) {
-        const sideBarLinks = document.querySelector(".links");
         this.projectObjects.push(new projectContent(title));
-        const newLink = document.createElement("h3")
-        newLink.id = "project";
-        newLink.className = "not-active";
-        newLink.style.fontSize = "23px";
-        newLink.setAttribute('data-project', title);
-        newLink.innerHTML = title;
-        sideBarLinks.appendChild(newLink);
+        this.updateSidebar();
     }
 }
 
